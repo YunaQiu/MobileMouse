@@ -33,8 +33,8 @@ import java.util.UUID;
 public class MainActivity extends AppCompatActivity {
     TextView show;
     RelativeLayout mainLayout;
-    Button leftBtn,rightBtn;
-    Button blueToothBtn, closeBlue, changeMode;
+    Button leftBtn,rightBtn,adjust;
+    Button blueToothBtn, changeMode;
     Spinner blueToothSpinner;
     BluetoothSocket socket = null;
     private SensorManager sensorManager;
@@ -53,69 +53,101 @@ public class MainActivity extends AppCompatActivity {
         rightBtn = (Button) findViewById(R.id.rightBtn);
         blueToothBtn = (Button) findViewById(R.id.blueToothBtn);
         blueToothSpinner = (Spinner) findViewById(R.id.blueToothSpinner);
-//        closeBlue = (Button) findViewById(R.id.closeBlue);
         changeMode = (Button) findViewById(R.id.changeMode);
+        adjust = (Button) findViewById(R.id.adjust);
         sensorManager=(SensorManager)getSystemService(SENSOR_SERVICE);
         sensor=sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
 
         blueToothBtn.setOnClickListener(new BlueButtonListener());
-        leftBtn.setOnClickListener(new View.OnClickListener(){
+        adjust.setOnClickListener(new View.OnClickListener(){
             @Override
             public void onClick(View v) {
-                Log.i("info","---action leftClick-----");
-                show.setText("左键单击");
-                sendMessage("leftclick");
+                Log.i("info", "----adjust----");
+                show.setText("校准");
+                sendMessage("adjust");
             }
         });
-//        closeBlue.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View v) {
-//                if (socket != null) {
-//                    try {
-//                        socket.close();
-//                        isConnect = false;
-//                        Log.i("info","---链接断开-----");
-//                    } catch (IOException e) {
-//                        Log.e("TAG", e.toString());
-//                    }
-//                }
-//            }
-//        });
+        leftBtn.setOnTouchListener(leftBtnListener);
+        rightBtn.setOnTouchListener(rightBtnListener);
         changeMode.setOnClickListener(new View.OnClickListener(){
             @Override
             public void onClick(View v) {
-                switch(moveMode){
-                    case 0:
-                        moveMode = 1;
-                        mainLayout.setOnTouchListener(null);
-                        sensorManager.registerListener(sensorlistener, sensor, SensorManager.SENSOR_DELAY_NORMAL);
-//                        sensorManager.registerListener(sensorlistener, sensor, 10);
-                        changeMode.setText("切换至触屏滑动模式");
-                        break;
-                    case 1:
-                        moveMode = 0;
-                        mainLayout.setOnTouchListener(touchListener);
-                        sensorManager.unregisterListener(sensorlistener);
-                        changeMode.setText("切换至重力感应模式");
-                        break;
-                }
+            switch(moveMode){
+                case 0:
+                    moveMode = 1;
+                    mainLayout.setOnTouchListener(null);
+                    sensorManager.registerListener(sensorlistener, sensor, 10);
+                    changeMode.setText("切换至触屏滑动模式");
+                    break;
+                case 1:
+                    moveMode = 0;
+                    mainLayout.setOnTouchListener(touchListener);
+                    sensorManager.unregisterListener(sensorlistener);
+                    changeMode.setText("切换至重力感应模式");
+                    break;
+            }
             }
         });
-        rightBtn.setOnClickListener(new View.OnClickListener(){
-            @Override
-            public void onClick(View v) {
-                Log.i("info","---action rightClick-----");
-                show.setText("右键单击");
-                sendMessage("rightclick");
-            }
-        });
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+
         if (moveMode == 0) {
             mainLayout.setOnTouchListener(touchListener);
         }else if(moveMode == 1){
-            sensorManager.registerListener(sensorlistener, sensor, SensorManager.SENSOR_DELAY_NORMAL);
+            sensorManager.registerListener(sensorlistener, sensor, 10);
         }
     }
 
+    @Override
+    protected void onPause() {
+        super.onPause();
+
+        if (moveMode == 0) {
+            mainLayout.setOnTouchListener(null);
+        }else if(moveMode == 1){
+            sensorManager.unregisterListener(sensorlistener);
+        }
+    }
+
+    private View.OnTouchListener leftBtnListener = new View.OnTouchListener(){
+        @Override
+        public boolean onTouch(View v, MotionEvent event) {
+            // TODO Auto-generated method stub
+            switch (event.getAction()) {
+                case MotionEvent.ACTION_DOWN:
+                    Log.i("info", "---left down-----");
+                    show.setText("左键按下");
+                    sendMessage("leftdown");
+                    break;
+                case MotionEvent.ACTION_UP:
+                    Log.i("info", "---left up-----");
+                    show.setText("左键弹起");
+                    sendMessage("leftup");
+            }
+            return true;
+        }
+    };
+    private View.OnTouchListener rightBtnListener = new View.OnTouchListener(){
+        @Override
+        public boolean onTouch(View v, MotionEvent event) {
+            // TODO Auto-generated method stub
+            switch (event.getAction()) {
+                case MotionEvent.ACTION_DOWN:
+                    Log.i("info", "---right down-----");
+                    show.setText("右键按下");
+                    sendMessage("rightdown");
+                    break;
+                case MotionEvent.ACTION_UP:
+                    Log.i("info", "---right up-----");
+                    show.setText("右键弹起");
+                    sendMessage("rightup");
+            }
+            return true;
+        }
+    };
     private View.OnTouchListener touchListener = new View.OnTouchListener(){
         private float deltaX;
         private float deltaY;
@@ -161,6 +193,7 @@ public class MainActivity extends AppCompatActivity {
         public void onAccuracyChanged(Sensor sensor, int accuracy) {
         }
     };
+
     private boolean sendMessage(String message){
         if (isConnect) {
             try {
