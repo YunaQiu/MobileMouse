@@ -67,6 +67,26 @@ public class MainActivity extends AppCompatActivity {
                 sendMessage("adjust");
             }
         });
+        mainLayout.setOnClickListener(new View.OnClickListener(){
+            @Override
+            public void onClick(View v) {
+                Log.i("info", "----leftClick----");
+                show.setText("左键点击");
+                sendMessage("leftclick");
+            }
+        });
+        mainLayout.setOnLongClickListener(new View.OnLongClickListener(){
+            @Override
+            public boolean onLongClick(View v) {
+                if (!touchListener.isMove() && !touchListener.isUp()){
+                    Log.i("info", "----leftLongClick----");
+                    show.setText("左键长按");
+                    sendMessage("longclick");
+                    return true;
+                }
+                return false;
+            }
+        });
         leftBtn.setOnTouchListener(leftBtnListener);
         rightBtn.setOnTouchListener(rightBtnListener);
         changeMode.setOnClickListener(new View.OnClickListener(){
@@ -148,11 +168,13 @@ public class MainActivity extends AppCompatActivity {
             return true;
         }
     };
-    private View.OnTouchListener touchListener = new View.OnTouchListener(){
+    private class ScreenTouchListener implements View.OnTouchListener{
         private float deltaX;
         private float deltaY;
         private float preX;
         private float preY;
+        private boolean isMove = false;
+        private boolean isUp = false;
 
         @Override
         public boolean onTouch(View v, MotionEvent event) {
@@ -160,9 +182,11 @@ public class MainActivity extends AppCompatActivity {
             switch (event.getAction()) {
                 case MotionEvent.ACTION_DOWN:
                     Log.i("info", "---action down-----");
+                    isUp = false;
+                    isMove = false;
                     preX = event.getX();
                     preY = event.getY();
-                    break;
+                    return false;
                 case MotionEvent.ACTION_MOVE:
                     Log.i("info", "---action move-----");
                     deltaX = event.getX() - preX;
@@ -171,13 +195,74 @@ public class MainActivity extends AppCompatActivity {
                     sendMessage("move:(" + deltaX + "," + deltaY + ")");
                     preX = event.getX();
                     preY = event.getY();
-                    break;
+                    isMove = true;
+                    return true;
                 case MotionEvent.ACTION_UP:
                     Log.i("info", "---action up-----");
+                    isUp = true;
+                    if (isMove){
+                        isMove = false;
+                        return true;
+                    }else{
+                        return false;
+                    }
             }
             return true;
         }
-    };
+
+        public boolean isMove(){
+            Log.i("info", "isMove:" + isMove);
+            return this.isMove;
+        }
+        public boolean isUp(){
+            Log.i("info", "isUp:" + isUp);
+            return this.isUp;
+        }
+    }
+    private ScreenTouchListener touchListener = new ScreenTouchListener();
+//    private View.OnTouchListener touchListener = new View.OnTouchListener(){
+//        private float deltaX;
+//        private float deltaY;
+//        private float preX;
+//        private float preY;
+//        private boolean isMove = false;
+//
+//        @Override
+//        public boolean onTouch(View v, MotionEvent event) {
+//            // TODO Auto-generated method stub
+//            switch (event.getAction()) {
+//                case MotionEvent.ACTION_DOWN:
+//                    Log.i("info", "---action down-----");
+//                    preX = event.getX();
+//                    preY = event.getY();
+//                    return false;
+//                case MotionEvent.ACTION_MOVE:
+//                    Log.i("info", "---action move-----");
+//                    deltaX = event.getX() - preX;
+//                    deltaY = event.getY() - preY;
+//                    show.setText("偏移坐标为：" + "(" + deltaX + " , " + deltaY + ")");
+//                    sendMessage("move:(" + deltaX + "," + deltaY + ")");
+//                    preX = event.getX();
+//                    preY = event.getY();
+//                    isMove = true;
+//                    return true;
+//                case MotionEvent.ACTION_UP:
+//                    Log.i("info", "---action up-----");
+//                    if (isMove){
+//                        isMove = false;
+//                        return true;
+//                    }else{
+//                        isMove = false;
+//                        return false;
+//                    }
+//            }
+//            return false;
+//        }
+//
+//        public boolean isMove(){
+//            return this.isMove;
+//        }
+//    };
     private SensorEventListener sensorlistener= new SensorEventListener(){
         float gravityX, gravityY, gravityZ;
         @Override
