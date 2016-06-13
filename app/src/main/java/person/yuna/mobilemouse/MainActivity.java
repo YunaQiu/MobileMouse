@@ -9,6 +9,7 @@ import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import android.os.Handler;
 import android.os.Vibrator;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -20,29 +21,32 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.RelativeLayout;
 import android.widget.Spinner;
-import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
 public class MainActivity extends AppCompatActivity {
+    private static final long LONG_CLICK_TIME = 500;
     TextView show;
     RelativeLayout mainLayout;
     Button leftBtn,rightBtn,adjust;
     Button blueToothBtn, changeMode;
     Spinner blueToothSpinner;
     BluetoothSocket socket = null;
-    private SensorManager sensorManager;
+    private SensorManager sensorManager;    //用于重力传感器
     private Sensor sensor;
-    boolean isConnect = false;
-    int moveMode = 0;
+    boolean isConnect = false;      //是否已连接上蓝牙
+    int moveMode = 0;       //移动模式：0：触屏移动；1：重力感应移动
+    private long clickDownTime;     //记录触屏按下的时间点
+    private Handler longClickHandler = new Handler();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -60,6 +64,7 @@ public class MainActivity extends AppCompatActivity {
         sensorManager=(SensorManager)getSystemService(SENSOR_SERVICE);
         sensor=sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
 
+        mainLayout.setOnTouchListener(touchListener);
         blueToothBtn.setOnClickListener(new BlueButtonListener());
         adjust.setOnClickListener(new View.OnClickListener(){
             @Override
@@ -67,30 +72,6 @@ public class MainActivity extends AppCompatActivity {
                 Log.i("info", "----adjust----");
                 show.setText("校准");
                 sendMessage("adjust");
-            }
-        });
-        mainLayout.setOnClickListener(new View.OnClickListener(){
-            @Override
-            public void onClick(View v) {
-                Log.i("info", "----leftClick----");
-                show.setText("左键点击");
-                sendMessage("leftclick");
-            }
-        });
-        mainLayout.setOnLongClickListener(new View.OnLongClickListener(){
-            @Override
-            public boolean onLongClick(View v) {
-                if (moveMode == 0){
-                    if (touchListener.isMove() || touchListener.isUp()){
-                        return false;
-                    }
-                }
-                Log.i("info", "----leftLongClick----");
-                show.setText("左键长按");
-                sendMessage("longclick");
-                Vibrator vib = (Vibrator) getSystemService(Service.VIBRATOR_SERVICE);
-                vib.vibrate(100);
-                return true;
             }
         });
         leftBtn.setOnTouchListener(leftBtnListener);
@@ -101,13 +82,11 @@ public class MainActivity extends AppCompatActivity {
             switch(moveMode){
                 case 0:
                     moveMode = 1;
-                    mainLayout.setOnTouchListener(null);
                     sensorManager.registerListener(sensorlistener, sensor, 10);
                     changeMode.setText("切换至触屏滑动模式");
                     break;
                 case 1:
                     moveMode = 0;
-                    mainLayout.setOnTouchListener(touchListener);
                     sensorManager.unregisterListener(sensorlistener);
                     changeMode.setText("切换至重力感应模式");
                     break;
@@ -120,9 +99,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
 
-        if (moveMode == 0) {
-            mainLayout.setOnTouchListener(touchListener);
-        }else if(moveMode == 1){
+        if(moveMode == 1){
             sensorManager.registerListener(sensorlistener, sensor, 10);
         }
     }
@@ -131,9 +108,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onPause() {
         super.onPause();
 
-        if (moveMode == 0) {
-            mainLayout.setOnTouchListener(null);
-        }else if(moveMode == 1){
+        if(moveMode == 1){
             sensorManager.unregisterListener(sensorlistener);
         }
     }
@@ -181,7 +156,6 @@ public class MainActivity extends AppCompatActivity {
         private float preX;
         private float preY;
         private boolean isMove = false;
-        private boolean isUp = false;
 
         @Override
         public boolean onTouch(View v, MotionEvent event) {
@@ -189,44 +163,55 @@ public class MainActivity extends AppCompatActivity {
             switch (event.getAction()) {
                 case MotionEvent.ACTION_DOWN:
                     Log.i("info", "---action down-----");
-                    isUp = false;
                     isMove = false;
                     preX = event.getX();
                     preY = event.getY();
-                    return false;
+                    longClickHandler.postDelayed(longClickRunnable, LONG_CLICK_TIME);
+                    clickDownTime = Calendar.getInstance().getTimeInMillis();
+                    break;
                 case MotionEvent.ACTION_MOVE:
                     Log.i("info", "---action move-----");
-                    deltaX = event.getX() - preX;
-                    deltaY = event.getY() - preY;
-                    show.setText("移动中");
-                    sendMessage("move:(" + deltaX + "," + deltaY + ")");
-                    preX = event.getX();
-                    preY = event.getY();
+                    if (moveMode == 0){
+                        deltaX = event.getX() - preX;
+                        deltaY = event.getY() - preY;
+                        show.setText("移动中");
+                        sendMessage("move:(" + deltaX + "," + deltaY + ")");
+                        preX = event.getX();
+                        preY = event.getY();
+                    }
+                    if (!isMove) {
+                        longClickHandler.removeCallbacks(longClickRunnable);
+                    }
                     isMove = true;
-                    return true;
+                    break;
                 case MotionEvent.ACTION_UP:
                     Log.i("info", "---action up-----");
-                    isUp = true;
+                    longClickHandler.removeCallbacks(longClickRunnable);
                     if (isMove){
-                        isMove = false;
-                        return true;
-                    }else{
-                        return false;
+                        if (moveMode == 0) {
+                            Log.i("info", "----move end----");
+                            show.setText("移动结束");
+                            sendMessage("moveend");
+                        }
+                    }else if (Calendar.getInstance().getTimeInMillis() - clickDownTime <= LONG_CLICK_TIME){
+                        Log.i("info", "----leftClick----");
+                        show.setText("左键点击");
+                        sendMessage("leftclick");
                     }
             }
             return true;
         }
-
-        public boolean isMove(){
-            Log.i("info", "isMove:" + isMove);
-            return this.isMove;
-        }
-        public boolean isUp(){
-            Log.i("info", "isUp:" + isUp);
-            return this.isUp;
-        }
     }
-
+    Runnable longClickRunnable = new Runnable() {
+        @Override
+        public void run() {
+            Log.i("info", "----leftLongClick----");
+            Toast.makeText(MainActivity.this.getApplicationContext(), "左键长按",Toast.LENGTH_SHORT).show();
+            sendMessage("longclick");
+            Vibrator vib = (Vibrator) getSystemService(Service.VIBRATOR_SERVICE);
+            vib.vibrate(100);
+        }
+    };
     private SensorEventListener sensorlistener= new SensorEventListener(){
         float gravityX, gravityY, gravityZ;
         @Override
