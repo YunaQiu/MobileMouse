@@ -80,15 +80,17 @@ public class MainActivity extends AppCompatActivity {
         mainLayout.setOnLongClickListener(new View.OnLongClickListener(){
             @Override
             public boolean onLongClick(View v) {
-                if (!touchListener.isMove() && !touchListener.isUp()){
-                    Log.i("info", "----leftLongClick----");
-                    show.setText("左键长按");
-                    sendMessage("longclick");
-                    Vibrator vib = (Vibrator) getSystemService(Service.VIBRATOR_SERVICE);
-                    vib.vibrate(100);
-                    return true;
+                if (moveMode == 0){
+                    if (touchListener.isMove() || touchListener.isUp()){
+                        return false;
+                    }
                 }
-                return false;
+                Log.i("info", "----leftLongClick----");
+                show.setText("左键长按");
+                sendMessage("longclick");
+                Vibrator vib = (Vibrator) getSystemService(Service.VIBRATOR_SERVICE);
+                vib.vibrate(100);
+                return true;
             }
         });
         leftBtn.setOnTouchListener(leftBtnListener);
