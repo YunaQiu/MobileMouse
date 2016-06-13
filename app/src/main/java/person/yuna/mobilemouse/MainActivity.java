@@ -1,5 +1,6 @@
 package person.yuna.mobilemouse;
 
+import android.app.Service;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
@@ -8,6 +9,7 @@ import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import android.os.Vibrator;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -82,6 +84,8 @@ public class MainActivity extends AppCompatActivity {
                     Log.i("info", "----leftLongClick----");
                     show.setText("左键长按");
                     sendMessage("longclick");
+                    Vibrator vib = (Vibrator) getSystemService(Service.VIBRATOR_SERVICE);
+                    vib.vibrate(100);
                     return true;
                 }
                 return false;
@@ -168,6 +172,7 @@ public class MainActivity extends AppCompatActivity {
             return true;
         }
     };
+    private ScreenTouchListener touchListener = new ScreenTouchListener();
     private class ScreenTouchListener implements View.OnTouchListener{
         private float deltaX;
         private float deltaY;
@@ -191,7 +196,7 @@ public class MainActivity extends AppCompatActivity {
                     Log.i("info", "---action move-----");
                     deltaX = event.getX() - preX;
                     deltaY = event.getY() - preY;
-                    show.setText("偏移坐标为：" + "(" + deltaX + " , " + deltaY + ")");
+                    show.setText("移动中");
                     sendMessage("move:(" + deltaX + "," + deltaY + ")");
                     preX = event.getX();
                     preY = event.getY();
@@ -219,50 +224,7 @@ public class MainActivity extends AppCompatActivity {
             return this.isUp;
         }
     }
-    private ScreenTouchListener touchListener = new ScreenTouchListener();
-//    private View.OnTouchListener touchListener = new View.OnTouchListener(){
-//        private float deltaX;
-//        private float deltaY;
-//        private float preX;
-//        private float preY;
-//        private boolean isMove = false;
-//
-//        @Override
-//        public boolean onTouch(View v, MotionEvent event) {
-//            // TODO Auto-generated method stub
-//            switch (event.getAction()) {
-//                case MotionEvent.ACTION_DOWN:
-//                    Log.i("info", "---action down-----");
-//                    preX = event.getX();
-//                    preY = event.getY();
-//                    return false;
-//                case MotionEvent.ACTION_MOVE:
-//                    Log.i("info", "---action move-----");
-//                    deltaX = event.getX() - preX;
-//                    deltaY = event.getY() - preY;
-//                    show.setText("偏移坐标为：" + "(" + deltaX + " , " + deltaY + ")");
-//                    sendMessage("move:(" + deltaX + "," + deltaY + ")");
-//                    preX = event.getX();
-//                    preY = event.getY();
-//                    isMove = true;
-//                    return true;
-//                case MotionEvent.ACTION_UP:
-//                    Log.i("info", "---action up-----");
-//                    if (isMove){
-//                        isMove = false;
-//                        return true;
-//                    }else{
-//                        isMove = false;
-//                        return false;
-//                    }
-//            }
-//            return false;
-//        }
-//
-//        public boolean isMove(){
-//            return this.isMove;
-//        }
-//    };
+
     private SensorEventListener sensorlistener= new SensorEventListener(){
         float gravityX, gravityY, gravityZ;
         @Override
