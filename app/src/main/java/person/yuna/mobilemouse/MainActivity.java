@@ -100,7 +100,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 String file = fileName.getText().toString();
-                if (file == ""){
+                if (file.equals("")){
                     Toast.makeText(MainActivity.this.getApplicationContext(), "请输入文件名",Toast.LENGTH_SHORT).show();
                     return;
                 }
@@ -173,6 +173,7 @@ public class MainActivity extends AppCompatActivity {
         private float preX;
         private float preY;
         private boolean isMove = false;
+        private boolean isLongClick = false;
 
         @Override
         public boolean onTouch(View v, MotionEvent event) {
@@ -181,16 +182,20 @@ public class MainActivity extends AppCompatActivity {
                 case MotionEvent.ACTION_DOWN:
                     Log.i("info", "---action down-----");
                     isMove = false;
+                    isLongClick = false;
                     preX = event.getX();
                     preY = event.getY();
                     longClickHandler.postDelayed(longClickRunnable, LONG_CLICK_TIME);
                     clickDownTime = Calendar.getInstance().getTimeInMillis();
                     break;
                 case MotionEvent.ACTION_MOVE:
-                    Log.i("info", "---action move-----");
+                    deltaX = event.getX() - preX;
+                    deltaY = event.getY() - preY;
+                    if (Math.abs(deltaX) < 0.0001 && Math.abs(deltaY) < 0.0001){
+                        break;
+                    }
+                    Log.i("info", "---action move：" + deltaX + "," + deltaY);
                     if (moveMode == 0){
-                        deltaX = event.getX() - preX;
-                        deltaY = event.getY() - preY;
                         show.setText("移动中");
                         sendMessage("move:(" + deltaX + "," + deltaY + ")");
                         preX = event.getX();
@@ -204,19 +209,20 @@ public class MainActivity extends AppCompatActivity {
                 case MotionEvent.ACTION_UP:
                     Log.i("info", "---action up-----");
                     longClickHandler.removeCallbacks(longClickRunnable);
-                    if (isMove){
-                        if (moveMode == 0) {
-                            Log.i("info", "----move end----");
-                            show.setText("移动结束");
-                            sendMessage("moveend");
-                        }
-                    }else if (Calendar.getInstance().getTimeInMillis() - clickDownTime <= LONG_CLICK_TIME){
+                    if (!isMove && (Calendar.getInstance().getTimeInMillis() - clickDownTime <= LONG_CLICK_TIME)){
                         Log.i("info", "----leftClick----");
                         show.setText("左键点击");
                         sendMessage("leftclick");
+                    }else if (isLongClick){
+                        Log.i("info", "----long end----");
+                        sendMessage("longend");
                     }
             }
             return true;
+        }
+
+        private void setLongClick(){
+            this.isLongClick = true;
         }
     }
     Runnable longClickRunnable = new Runnable() {
@@ -227,6 +233,7 @@ public class MainActivity extends AppCompatActivity {
             sendMessage("longclick");
             Vibrator vib = (Vibrator) getSystemService(Service.VIBRATOR_SERVICE);
             vib.vibrate(100);
+            touchListener.setLongClick();
         }
     };
     private SensorEventListener sensorlistener= new SensorEventListener(){
