@@ -19,6 +19,7 @@ import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.RelativeLayout;
 import android.widget.Spinner;
 import android.widget.TextView;
@@ -40,6 +41,8 @@ public class MainActivity extends AppCompatActivity {
     Button leftBtn,rightBtn,adjust;
     Button blueToothBtn, changeMode;
     Spinner blueToothSpinner;
+    EditText fileName;
+    Button openFileBtn;
     BluetoothSocket socket = null;
     private SensorManager sensorManager;    //用于重力传感器
     private Sensor sensor;
@@ -61,21 +64,13 @@ public class MainActivity extends AppCompatActivity {
         blueToothSpinner = (Spinner) findViewById(R.id.blueToothSpinner);
         changeMode = (Button) findViewById(R.id.changeMode);
         adjust = (Button) findViewById(R.id.adjust);
+        fileName = (EditText) findViewById(R.id.fileName);
+        openFileBtn = (Button) findViewById(R.id.openFileBtn);
         sensorManager=(SensorManager)getSystemService(SENSOR_SERVICE);
         sensor=sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
 
         mainLayout.setOnTouchListener(touchListener);
         blueToothBtn.setOnClickListener(new BlueButtonListener());
-        adjust.setOnClickListener(new View.OnClickListener(){
-            @Override
-            public void onClick(View v) {
-                Log.i("info", "----adjust----");
-                show.setText("校准");
-                sendMessage("adjust");
-            }
-        });
-        leftBtn.setOnTouchListener(leftBtnListener);
-        rightBtn.setOnTouchListener(rightBtnListener);
         changeMode.setOnClickListener(new View.OnClickListener(){
             @Override
             public void onClick(View v) {
@@ -93,6 +88,28 @@ public class MainActivity extends AppCompatActivity {
             }
             }
         });
+        adjust.setOnClickListener(new View.OnClickListener(){
+            @Override
+            public void onClick(View v) {
+                Log.i("info", "----adjust----");
+                show.setText("校准");
+                sendMessage("adjust");
+            }
+        });
+        openFileBtn.setOnClickListener(new View.OnClickListener(){
+            @Override
+            public void onClick(View v) {
+                String file = fileName.getText().toString();
+                if (file == ""){
+                    Toast.makeText(MainActivity.this.getApplicationContext(), "请输入文件名",Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                Log.i("info", "----open file:" + file + "---");
+                sendMessage("open(" + file + ")");
+            }
+        });
+        leftBtn.setOnTouchListener(leftBtnListener);
+        rightBtn.setOnTouchListener(rightBtnListener);
     }
 
     @Override

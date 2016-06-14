@@ -31,9 +31,9 @@
         android:layout_height="40dp"
         android:id="@+id/show"
         android:text="感应动作"
-        android:layout_alignParentLeft="true"
-        android:layout_alignParentStart="true"
-        android:layout_below="@+id/blueToothSpinner"
+         android:layout_below="@+id/blueToothSpinner"
+         android:layout_alignParentLeft="true"
+         android:layout_alignParentStart="true"
          android:layout_marginTop="10dp" />
 
     <Button
@@ -41,9 +41,9 @@
         android:layout_height="wrap_content"
         android:text="切换至重力感应模式"
         android:id="@+id/changeMode"
-        android:layout_below="@+id/blueToothBtn"
-        android:layout_alignParentRight="true"
-        android:layout_alignParentEnd="true" />
+        android:layout_below="@+id/blueToothSpinner"
+        android:layout_toLeftOf="@+id/adjust"
+        android:layout_toStartOf="@+id/adjust" />
 
     <Button
         style="?android:attr/buttonStyleSmall"
@@ -51,9 +51,38 @@
         android:layout_height="wrap_content"
         android:text="校准"
         android:id="@+id/adjust"
-        android:layout_below="@+id/changeMode"
-        android:layout_alignParentRight="true"
-        android:layout_alignParentEnd="true" />
+        android:layout_below="@+id/blueToothBtn"
+        android:layout_alignRight="@+id/blueToothBtn"
+        android:layout_alignEnd="@+id/blueToothBtn" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="40dp"
+        android:text="打开文件："
+        android:id="@+id/openFileText"
+        android:textSize="15dp"
+        android:gravity="center_vertical"
+        android:layout_above="@+id/linearLayout"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true" />
+
+    <EditText
+        android:layout_width="200dp"
+        android:layout_height="40dp"
+        android:id="@+id/fileName"
+        android:layout_alignTop="@+id/openFileText"
+        android:layout_toRightOf="@+id/openFileText"
+        android:layout_toEndOf="@+id/openFileText" />
+
+    <Button
+        style="?android:attr/buttonStyleSmall"
+        android:layout_width="wrap_content"
+        android:layout_height="40dp"
+        android:text="打开"
+        android:id="@+id/openFileBtn"
+        android:layout_above="@+id/linearLayout"
+        android:layout_toRightOf="@+id/fileName"
+        android:layout_toEndOf="@+id/fileName" />
 
     <LinearLayout
         android:orientation="horizontal"
