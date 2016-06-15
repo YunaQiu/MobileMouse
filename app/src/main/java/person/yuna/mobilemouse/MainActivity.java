@@ -30,7 +30,9 @@ import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
 
@@ -252,23 +254,70 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 
-    private boolean sendMessage(String message){
-        if (isConnect) {
-            try {
-                OutputStream outStream = socket.getOutputStream();
-                outStream.write((message + "\n").getBytes());
-                Log.i("info","---发送成功-----");
-                return true;
-            } catch (IOException e) {
-                Log.e("TAG", e.toString());
-                Log.i("info","---发送失败-----");
-                return false;
+    Queue<String> messageQueue = new LinkedList<String>();
+    SenderThread messageSender = new SenderThread();
+    class SenderThread implements Runnable{
+        private boolean waiting = false;
+        private Thread thread;
+
+        public SenderThread(){
+            this.thread = new Thread(this);
+            this.thread.start();
+        }
+        public void resume(){
+            if(!waiting){
+                return;
             }
-        }else{
-            Log.i("info","---发送失败-----");
+            synchronized (this){
+                this.waiting = false;
+                this.notifyAll();
+            }
+        }
+        @Override
+        public void run() {
+            String message;
+            while(true){
+                try{
+                    Thread.sleep(5);
+                    synchronized (this){
+                        if (waiting){
+                            this.wait();
+                        }
+                    }
+
+                    message = messageQueue.poll();
+                    if (message == null){
+                        waiting = true;
+                        Log.i("info","-----waiting-----");
+                        continue;
+                    }else{
+                        Log.i("info","-----ready send-----");
+                        try {
+                            OutputStream outStream = socket.getOutputStream();
+                            outStream.write((message + "\n").getBytes());
+                            Log.i("info", "---发送成功-----");
+                        } catch (IOException e) {
+                            Log.e("TAG", e.toString());
+                            Log.i("info", "---发送失败-----");
+                        }
+                    }
+                }catch (InterruptedException e){
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+    private boolean sendMessage(String message) {
+        if (isConnect) {
+            messageQueue.offer(message);
+            messageSender.resume();
+            return true;
+        } else {
+            Log.i("info", "---发送失败-----");
             return false;
         }
     }
+
     public class BlueSelectorItem{
         private String mac;
         private String name;
